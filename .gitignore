@@ -1,0 +1,4 @@
+node_modules/
+mysqlcomparer.log
+package.json
+package-lock.json
