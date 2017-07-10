@@ -1,0 +1,6 @@
+{
+    "database": [
+        {"id":"firstdatabase", "host": "127.0.0.1", "port": 3306, "user": "izerozzw", "password": "123564", "database": "firstdatabase"}
+        
+    ]
+}
