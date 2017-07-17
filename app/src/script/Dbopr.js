@@ -12,11 +12,12 @@ function Dbopr(){
 function init(){
     initDatabaseConn(function(err, data) {
         if (err) {
-            winston.log('info', 'initDatabaseConn faile.err=' + err);
+            winston.log('info', 'initDatabaseConn faile.err=更改了这个文件' + err);
         } else {
             hasInit = true;
             winston.log('info', 'initDatabaseConn success.data=' + data);
         }
+
     });
 }
     this.initDatabaseConn = function(callback){
