@@ -7,7 +7,7 @@ function DBServer() {
     this.configFile = "./config.json";
     this.configData = null;
 
-    
+
 
     this.initDatabaseConn = function (callback) {
         winston.log('info', "[Comparer.initDatabaseConn]start.");
@@ -20,45 +20,50 @@ function DBServer() {
                     for (var index = 0; index < database.length; index++) {
                         var item = database[index];
                         winston.log('info', "[Comparer.initDatabaseConn]index=" + index + ",item=" + JSON.stringify(item));
-                        var param = {
+                        var conn = mysql.createConnection({
                             host: item.host,
-                            port: item.port,
                             user: item.user,
                             password: item.password,
-                            database: item.database
-                        };
-
-                        this.addConn(item.id, param, function (err, data) {
-                            callback(err, data);
+                            database: item.database,
+                            port: item.port
                         });
+
+                        //打开数据库连接
+                        conn.connect(function (err) {
+                            if (err) {
+                                winston.log('error', 'error connecting: ' + err.stack);
+                                callback(err, null);
+                            } else {
+                                dbconn = conn;
+
+                                winston.log('info', '[DBServer.addConn]success.connName=' + item.user);
+                                //执行查询
+                                dbconn.query(queryStr, function (err, rows) {
+                                    if (err) {
+                                        console.log('info', '[DBServer.Query]err:', err);
+                                        return null;
+                                    }
+
+                                    winston.log('info', '[DBServer.Query]info length:' + rows.length);
+                                    dataSelect = rows;
+                                    console.log(rows);
+                                    var res = {
+                                        data: dataSelect
+                                    };
+
+                                    //winston.log('info', "[DBServer.getTableData]res=" + res);
+                                    //winston.log('info', "[DBServer.getTableData]dataSelect[0]=" + dataSelect[0].toString());
+                                    callback(res);
+                                });
+                            }
+                        });
+
                     }
                 }
             });
         }
     };
 
-this.addConn = function (connName, connParam, callback) {
-        winston.log('info', '[DBServer.addConn]start.connName=' + connName);
-        var conn = mysql.createConnection({
-            host: connParam.host,
-            user: connParam.user,
-            password: connParam.password,
-            database: connParam.database,
-            port: connParam.port
-        });
-
-        conn.connect(function (err) {
-            if (err) {
-                winston.log('error', 'error connecting: ' + err.stack);
-                callback(err, null);
-            } else {
-                dbconn = conn;
-
-                winston.log('info', '[DBServer.addConn]success.connName=' + connName);
-                callback(null, conn);
-            }
-        });
-    };
     ///callback(err, data)：错误时err不为空，data为空；有数据返回时err为空，data不为空，返回数据。
     this.getConfig = function (callback) {
         console.log('info', "[InitDb.getConfig]configFile=" + this.configFile + ",this.configData=" + this.configData);
@@ -132,30 +137,87 @@ this.addConn = function (connName, connParam, callback) {
 
     //执行查询语句
     this.Query = function (queryStr, callback) {
-        console.log('info', '[DBServer.Query]start.connName=' + dbconn);
+        //如果连接为空
         if (!dbconn) {
             console.log('info', 'get conn faile.connName=' + dbconn);
-            return null;
-        }
+            winston.log('info', "[Comparer.initDatabaseConn]start.");
+            //如果配置数据为空则从新配置
+            if (null == this.configData) {
+                this.getConfig(function (err, data) {
+                    if (err) {
+                        callback(err, null);
+                    } else {
+                        var database = data.database;
+                        for (var index = 0; index < database.length; index++) {
+                            var item = database[index];
+                            winston.log('info', "[Comparer.initDatabaseConn]index=" + index + ",item=" + JSON.stringify(item));
+                            //新建一个连接
+                            var conn = mysql.createConnection({
+                                host: item.host,
+                                user: item.user,
+                                password: item.password,
+                                database: item.database,
+                                port: item.port
+                            });
+
+                            //打开数据库连接
+                            conn.connect(function (err) {
+                                if (err) {
+                                    winston.log('error', 'error connecting: ' + err.stack);
+                                    callback(err, null);
+                                } else {
+                                    dbconn = conn;
+
+                                    winston.log('info', '[DBServer.addConn]success.connName=' + item.user);
+                                    //执行查询
+                                    dbconn.query(queryStr, function (err, rows) {
+                                        if (err) {
+                                            console.log('info', '[DBServer.Query]err:', err);
+                                            return null;
+                                        }
+
+                                        winston.log('info', '[DBServer.Query]info length:' + rows.length);
+                                        dataSelect = rows;
+                                        console.log(dataSelect);
+                                        var res = {
+                                            data: dataSelect
+                                        };
+                                        console.log("resresres"+res);
+                                        //winston.log('info', "[DBServer.getTableData]res=" + res);
+                                        //winston.log('info', "[DBServer.getTableData]dataSelect[0]=" + dataSelect[0].toString());
+                                        callback(res);
+                                    });
+                                }
+                            });
 
 
-        dbconn.query(queryStr, function (err, rows) {
-            if (err) {
-                console.log('info', '[DBServer.Query]err:', err);
-                return null;
+                        }
+                    }
+                }, queryStr);
             }
 
-            winston.log('info', '[DBServer.Query]info length:' + rows.length);
-            dataSelect = rows;
-            console.log(rows);
-            var res = {
-                data: dataSelect
-            };
 
-            //winston.log('info', "[DBServer.getTableData]res=" + res);
-            //winston.log('info', "[DBServer.getTableData]dataSelect[0]=" + dataSelect[0].toString());
-            callback(res);
-        });
+        }
+        else {
+
+            dbconn.query(queryStr, function (err, rows) {
+                if (err) {
+                    console.log('info', '[DBServer.Query]err:', err);
+                    return null;
+                }
+
+                winston.log('info', '[DBServer.Query]info length:' + rows.length);
+                dataSelect = rows;
+                console.log(rows);
+                var res = {
+                    data: dataSelect
+                };
+
+                //winston.log('info', "[DBServer.getTableData]res=" + res);
+                //winston.log('info', "[DBServer.getTableData]dataSelect[0]=" + dataSelect[0].toString());
+                callback(res);
+            });
+        };
     };
 };
 

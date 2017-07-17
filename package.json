@@ -16,10 +16,10 @@
   "devDependencies": {
     "electron": "^1.6.11",
     "electron-prebuilt": "^1.4.13",
-    "gulp": "^3.9.1"
+    "gulp": "^3.9.1",
+    "vue": "^2.4.1"
   },
   "dependencies": {
-    "flat-ui": "^2.1.1",
     "mysql": "^2.13.0",
     "vue": "^2.3.4",
     "winston": "^2.3.1"
